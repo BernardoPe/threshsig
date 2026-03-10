@@ -1,5 +1,6 @@
 package threshsig;
 
+import java.io.Serializable;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
@@ -13,7 +14,7 @@ import java.util.Random;
  * 
  * @author Steve Weis <sweis@mit.edu>
  */
-public class KeyShare {
+public class KeyShare implements Serializable  {
   // Constants and variables
   //............................................................................
   /** Secret key value */
@@ -119,7 +120,7 @@ public class KeyShare {
     BigInteger z = null;
     // Try to generate C and Z
     try {
-      md = MessageDigest.getInstance("SHA");
+      md = MessageDigest.getInstance("SHA-256");
       md.reset();
 
       // debug("v: " + groupVerifier.mod(n));

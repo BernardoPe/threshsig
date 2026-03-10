@@ -1,8 +1,9 @@
 package threshsig;
 
+import java.io.Serializable;
 import java.math.BigInteger;
 
-class Poly {
+class Poly implements Serializable  {
   private BigInteger[] coeff;
 
   private int size;

@@ -1,5 +1,6 @@
 package threshsig;
 
+import java.io.Serializable;
 import java.math.BigInteger;
 
 /**
@@ -14,7 +15,7 @@ import java.math.BigInteger;
 
 // TODO: Investigate the security of reusing the key parameters (q,p) with a
 // new Poly, since they are computationally expensive
-public class GroupKey {
+public class GroupKey implements Serializable  {
   /** (k,l) Parameters. k out of l shares needed for a signature */
   private int k, l;
 

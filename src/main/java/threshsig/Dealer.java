@@ -1,5 +1,6 @@
 package threshsig;
 
+import java.io.Serializable;
 import java.math.BigInteger;
 
 /**
@@ -10,7 +11,7 @@ import java.math.BigInteger;
  * 
  * @author Steve Weis <sweis@mit.edu>
  */
-public class Dealer {
+public class Dealer implements Serializable {
 
   // Constants and variables
   //............................................................................
