@@ -107,60 +107,11 @@ public class SigShare implements Serializable {
     // Test the verifier of each signature to ensure there are
     // no dummy sigs thrown in to corrupt the batch
     if (CHECKVERIFIER) {
-      final BigInteger FOUR = BigInteger.valueOf(4l);
-      final BigInteger TWO = BigInteger.valueOf(2l);
-      final BigInteger xtilde = x.modPow(FOUR.multiply(delta), n);
-
-      try {
-        final MessageDigest md = MessageDigest.getInstance("SHA-256");
-
-        for (int i = 0; i < k; i++) {
-          md.reset();
-          final Verifier ver = sigs[i].getSigVerifier();
-          final BigInteger v = ver.getGroupVerifier();
-          final BigInteger vi = ver.getShareVerifier();
-
-          // debug("v :" + v);
-          md.update(v.toByteArray());
-
-          // debug("xtilde :" + xtilde);
-          md.update(xtilde.toByteArray());
-
-          // debug("vi :" + vi);
-          md.update(vi.toByteArray());
-
-          final BigInteger xi = sigs[i].getSig();
-          // debug("xi^2 :" + xi.modPow(TWO,n));
-          md.update(xi.modPow(TWO, n).toByteArray());
-
-          final BigInteger vz = v.modPow(ver.getZ(), n);
-
-          final BigInteger vinegc = vi.modPow(ver.getC(), n).modInverse(n);
-          // debug("v^z*v^-c :" + vz.multiply(vinegc).mod(n));
-          md.update(vz.multiply(vinegc).mod(n).toByteArray());
-
-          final BigInteger xtildez = xtilde.modPow(ver.getZ(), n);
-
-          // TODO: CHECK PAPER!
-          final BigInteger xineg2c = xi.modPow(ver.getC(), n).modInverse(n);
-          // According to Shoup, pg. 8 this should be:
-          // xi.modPow(TWO,n).modPow(ver.getC(),n).modInverse(n);
-
-          // Something to do with working in Q_n since every
-          // element is a square
-
-          // debug("xi^-2cx: " + xineg2c.multiply(xtildez).mod(n));
-          md.update(xineg2c.multiply(xtildez).mod(n).toByteArray());
-          final BigInteger result = new BigInteger(md.digest()).mod(n);
-
-          if (!result.equals(ver.getC())) {
-            debug("Share verifier is not OK");
-            return false;
-          }
+      for (int i = 0; i < k; i++) {
+        if (!verifyPartial(data, sigs[i], l, n)) {
+          debug("Share verifier is not OK");
+          return false;
         }
-      } catch (final java.security.NoSuchAlgorithmException ex) {
-        debug("Provider could not locate SHA message digest .");
-        ex.printStackTrace();
       }
     }
 
@@ -177,6 +128,68 @@ public class SigShare implements Serializable {
     final BigInteger xeprime = x.modPow(eprime, n);
     final BigInteger we = w.modPow(e, n);
     return (xeprime.compareTo(we) == 0);
+  }
+
+  public static boolean verifyPartial(
+          final byte[] data,
+          final SigShare sigShare,
+          final int l,
+          final BigInteger n)
+  {
+    final BigInteger x = (new BigInteger(data)).mod(n);
+    final BigInteger delta = factorial(l);
+
+    final BigInteger FOUR = BigInteger.valueOf(4l);
+    final BigInteger TWO = BigInteger.valueOf(2l);
+    final BigInteger xtilde = x.modPow(FOUR.multiply(delta), n);
+
+    try {
+      final MessageDigest md = MessageDigest.getInstance("SHA-256");
+
+      md.reset();
+      final Verifier ver = sigShare.getSigVerifier();
+      final BigInteger v = ver.getGroupVerifier();
+      final BigInteger vi = ver.getShareVerifier();
+
+      // debug("v :" + v);
+      md.update(v.toByteArray());
+
+      // debug("xtilde :" + xtilde);
+      md.update(xtilde.toByteArray());
+
+      // debug("vi :" + vi);
+      md.update(vi.toByteArray());
+
+      final BigInteger xi = sigShare.getSig();
+      // debug("xi^2 :" + xi.modPow(TWO,n));
+      md.update(xi.modPow(TWO, n).toByteArray());
+
+      final BigInteger vz = v.modPow(ver.getZ(), n);
+
+      final BigInteger vinegc = vi.modPow(ver.getC(), n).modInverse(n);
+      // debug("v^z*v^-c :" + vz.multiply(vinegc).mod(n));
+      md.update(vz.multiply(vinegc).mod(n).toByteArray());
+
+      final BigInteger xtildez = xtilde.modPow(ver.getZ(), n);
+
+      // TODO: CHECK PAPER!
+      final BigInteger xineg2c = xi.modPow(ver.getC(), n).modInverse(n);
+      // According to Shoup, pg. 8 this should be:
+      // xi.modPow(TWO,n).modPow(ver.getC(),n).modInverse(n);
+
+      // Something to do with working in Q_n since every
+      // element is a square
+
+      // debug("xi^-2cx: " + xineg2c.multiply(xtildez).mod(n));
+      md.update(xineg2c.multiply(xtildez).mod(n).toByteArray());
+      final BigInteger result = new BigInteger(md.digest()).mod(n);
+
+      return result.equals(ver.getC());
+    } catch (final java.security.NoSuchAlgorithmException ex) {
+      debug("Provider could not locate SHA message digest .");
+      ex.printStackTrace();
+      return false;
+    }
   }
 
   /**

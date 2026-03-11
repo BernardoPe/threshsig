@@ -1,10 +1,8 @@
 package threshsig;
 
-import static junit.framework.Assert.assertFalse;
-import static junit.framework.Assert.assertTrue;
-
 import junit.framework.TestCase;
 
+import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Random;
@@ -24,7 +22,7 @@ public class ThreshTest extends TestCase {
   protected void setUp() {
     (new Random()).nextBytes(data);
     try {
-      MessageDigest md = MessageDigest.getInstance("SHA-1");
+      MessageDigest md = MessageDigest.getInstance("SHA-256");
       b = md.digest(data);
     } catch (NoSuchAlgorithmException e) {
       // This should not occur
@@ -78,13 +76,49 @@ public class ThreshTest extends TestCase {
         .verify(b, sigs, K, L, gk.getModulus(), gk.getExponent()));
   }
 
+  public void testVerifyPartialValid() {
+    System.out.println("Attempting to verify a valid partial signature...");
+
+    SigShare sig = keys[3].sign(b);
+
+    assertTrue(
+            SigShare.verifyPartial(
+                    b,
+                    sig,
+                    L,
+                    gk.getModulus()
+            )
+    );
+  }
+
+  public void testVerifyPartialCorruptedSig() {
+    System.out.println("Attempting to verify a corrupted partial signature...");
+
+    SigShare sig = keys[3].sign(b);
+
+    BigInteger corrupted =
+            sig.getSig().add(BigInteger.ONE).mod(gk.getModulus());
+
+    SigShare badSig =
+            new SigShare(sig.getId(), corrupted, sig.getSigVerifier());
+
+    assertFalse(
+            SigShare.verifyPartial(
+                    b,
+                    badSig,
+                    L,
+                    gk.getModulus()
+            )
+    );
+  }
+
   public void testVerifyBadSignature() {
     b = "corrupt data".getBytes();
     sigs[3] = keys[3].sign(b);
     assertFalse(SigShare.verify(b, sigs, K, L, gk.getModulus(), gk
         .getExponent()));
   }
-  
+
   public void testPerformance() {
     final int RUNS = 20;
     final int[] S = { 3, 5, 1, 2, 10, 7 };
